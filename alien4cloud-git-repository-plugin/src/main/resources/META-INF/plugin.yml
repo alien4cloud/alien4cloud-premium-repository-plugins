@@ -1,0 +1,11 @@
+id: alien-git-repository-plugin
+name: Git Repository Plugin
+version: ${project.version}
+description: >
+  Plugin that contains the resolver for git artifact
+configuration_class: alien4cloud.repostory.git.PluginFactoryConfiguration
+component_descriptors:
+  - bean_name: git-artifact-resolver
+    name: Git Artifact Resolver
+    description: >
+      Resolve an artifact on a git repository

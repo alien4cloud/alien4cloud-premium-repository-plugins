@@ -1,0 +1,11 @@
+id: alien-http-repository-plugin
+name: HTTP Artifact Resolver Plugin
+version: ${project.version}
+description: >
+  Plugin that contains resolver for http artifact
+configuration_class: alien4cloud.repository.http.PluginFactoryConfiguration
+component_descriptors:
+  - bean_name: http-artifact-resolver
+    name: HTTP Artifact Resolver
+    description: >
+      Resolve an artifact on a HTTP repository

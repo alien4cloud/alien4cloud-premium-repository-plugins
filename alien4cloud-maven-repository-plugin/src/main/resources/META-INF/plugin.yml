@@ -1,0 +1,11 @@
+id: alien-maven-repository-plugin
+name: Maven Repository Plugin
+version: ${project.version}
+description: >
+  Plugin that contains the resolver for maven artifact
+configuration_class: alien4cloud.repostory.maven.PluginFactoryConfiguration
+component_descriptors:
+  - bean_name: maven-artifact-resolver
+    name: Maven Artifact Resolver
+    description: >
+      Resolve an artifact on a maven repository

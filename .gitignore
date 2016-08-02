@@ -1,0 +1,11 @@
+target
+*.iml
+*.prefs
+.settings/
+.classpath
+.project
+bower_components
+node_modules
+.sass-cache
+.tmp
+data/
