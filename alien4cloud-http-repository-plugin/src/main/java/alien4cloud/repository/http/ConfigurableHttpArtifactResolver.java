@@ -31,11 +31,6 @@ public class ConfigurableHttpArtifactResolver implements IConfigurableArtifactRe
     }
 
     @Override
-    public Class<HttpArtifactResolverConfiguration> getResolverConfigurationType() {
-        return HttpArtifactResolverConfiguration.class;
-    }
-
-    @Override
     public String getResolverType() {
         return httpArtifactResolver.getResolverType();
     }

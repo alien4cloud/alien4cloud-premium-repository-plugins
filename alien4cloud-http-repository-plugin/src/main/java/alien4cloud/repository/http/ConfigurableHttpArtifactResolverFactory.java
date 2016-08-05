@@ -16,4 +16,9 @@ public class ConfigurableHttpArtifactResolverFactory implements IConfigurableArt
     public IConfigurableArtifactResolver<HttpArtifactResolverConfiguration> newInstance() {
         return factoryContext.getBean(ConfigurableHttpArtifactResolver.class);
     }
+
+    @Override
+    public Class<HttpArtifactResolverConfiguration> getResolverConfigurationType() {
+        return HttpArtifactResolverConfiguration.class;
+    }
 }

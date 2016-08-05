@@ -1,8 +1,10 @@
 package alien4cloud.repository.http;
 
+import javax.validation.constraints.NotNull;
+
+import alien4cloud.ui.form.annotation.FormPassword;
 import alien4cloud.ui.form.annotation.FormProperties;
-import alien4cloud.ui.form.annotation.FormPropertyConstraint;
-import alien4cloud.ui.form.annotation.FormPropertyDefinition;
+import alien4cloud.ui.form.annotation.FormValidValues;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,15 +13,15 @@ import lombok.Setter;
 @FormProperties({ "url", "user", "password", "authenticationMode" })
 public class HttpArtifactResolverConfiguration {
 
-    @FormPropertyDefinition(type = "string", isRequired = true, constraints = @FormPropertyConstraint(pattern = "^(http://|https://)+.+$"))
+    @NotNull
     private String url;
 
-    @FormPropertyDefinition(type = "string", isRequired = true, constraints = @FormPropertyConstraint(minLength = 1))
     private String user;
 
-    @FormPropertyDefinition(type = "string", isRequired = true, isPassword = true, constraints = @FormPropertyConstraint(minLength = 1))
+    @FormPassword
     private String password;
 
-    @FormPropertyDefinition(type = "string", isRequired = true, defaultValue = "BASIC", constraints = @FormPropertyConstraint(validValues = { "BASIC" }))
+    @NotNull
+    @FormValidValues("BASIC")
     private String authenticationMode;
 }
