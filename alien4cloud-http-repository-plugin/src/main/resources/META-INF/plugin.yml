@@ -5,7 +5,11 @@ description: >
   Plugin that contains resolver for http artifact
 configuration_class: alien4cloud.repository.http.PluginFactoryConfiguration
 component_descriptors:
-  - bean_name: http-artifact-resolver
-    name: HTTP Artifact Resolver
+  - bean_name: configurable-http-artifact-resolver-factory
+    name: HTTP Configurable Resolver Factory
     description: >
-      Resolve an artifact on a HTTP repository
+      Factory to create a configurable resolver for HTTP repository
+  - bean_name: http-artifact-resolver
+    name: HTTP Resolver
+    description: >
+      Resolver for HTTP repository's artifact

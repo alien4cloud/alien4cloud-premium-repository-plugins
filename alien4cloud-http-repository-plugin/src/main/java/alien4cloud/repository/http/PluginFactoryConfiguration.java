@@ -8,10 +8,21 @@ import org.springframework.context.annotation.Scope;
 @Configuration
 public class PluginFactoryConfiguration {
 
-    @Bean(name = "http-artifact-resolver")
+    @Bean(name = "configurable-http-artifact-resolver")
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public ConfigurableHttpArtifactResolver configurableHttpArtifactResolver() {
+        return new ConfigurableHttpArtifactResolver();
+    }
+
+    @Bean(name = "configurable-http-artifact-resolver-factory")
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
+    public ConfigurableHttpArtifactResolverFactory configurableHttpArtifactResolverFactory() {
+        return new ConfigurableHttpArtifactResolverFactory();
+    }
+
+    @Bean(name = "http-artifact-resolver")
+    @Scope(ConfigurableBeanFactory.SCOPE_SINGLETON)
     public HttpArtifactResolver httpArtifactResolver() {
         return new HttpArtifactResolver();
     }
-
 }
