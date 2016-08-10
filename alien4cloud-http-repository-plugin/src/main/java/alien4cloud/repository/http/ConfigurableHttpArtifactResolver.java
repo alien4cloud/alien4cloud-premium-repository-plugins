@@ -51,6 +51,9 @@ public class ConfigurableHttpArtifactResolver implements IConfigurableArtifactRe
 
     @Override
     public InputStream resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+        if (!canHandleArtifact(artifactReference, repositoryURL, repositoryType, credentials)) {
+            return null;
+        }
         HttpArtifactResolverConfiguration preConfiguration = getMandatoryConfiguration();
         if (StringUtils.isBlank(credentials) && preConfiguration.getUser() != null) {
             credentials = preConfiguration.getUser() + ":" + preConfiguration.getPassword();
