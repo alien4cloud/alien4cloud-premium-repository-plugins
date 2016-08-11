@@ -12,6 +12,9 @@ public class ConfigurableHttpArtifactResolverFactory implements IConfigurableArt
     @Resource
     private ApplicationContext factoryContext;
 
+    @Resource
+    private HttpArtifactResolver httpArtifactResolver;
+
     @Override
     public IConfigurableArtifactResolver<HttpArtifactResolverConfiguration> newInstance() {
         return factoryContext.getBean(ConfigurableHttpArtifactResolver.class);
@@ -20,5 +23,10 @@ public class ConfigurableHttpArtifactResolverFactory implements IConfigurableArt
     @Override
     public Class<HttpArtifactResolverConfiguration> getResolverConfigurationType() {
         return HttpArtifactResolverConfiguration.class;
+    }
+
+    @Override
+    public String getResolverType() {
+        return httpArtifactResolver.getResolverType();
     }
 }
