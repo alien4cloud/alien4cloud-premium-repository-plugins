@@ -3,8 +3,12 @@ name: Git Repository Plugin
 version: ${project.version}
 description: >
   Plugin that contains the resolver for git artifact
-configuration_class: alien4cloud.repostory.git.PluginFactoryConfiguration
+configuration_class: alien4cloud.repository.git.PluginFactoryConfiguration
 component_descriptors:
+  - bean_name: configurable-git-artifact-resolver-factory
+    name: HTTP Configurable Resolver Factory
+    description: >
+      Factory to create a configurable resolver for HTTP repository
   - bean_name: git-artifact-resolver
     name: Git Artifact Resolver
     description: >

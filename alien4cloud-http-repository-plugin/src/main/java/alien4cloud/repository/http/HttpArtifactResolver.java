@@ -2,6 +2,7 @@ package alien4cloud.repository.http;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.auth.AuthScope;
@@ -15,12 +16,21 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClients;
+import org.springframework.beans.factory.annotation.Value;
 
 import alien4cloud.component.repository.IArtifactResolver;
+import alien4cloud.repository.util.ResolverUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class HttpArtifactResolver implements IArtifactResolver {
+
+    private Path tempDir;
+
+    @Value("${directories.alien}/${directories.upload_temp}")
+    public void setTempDir(String tempDir) throws IOException {
+        this.tempDir = ResolverUtil.createPluginTemporaryDownloadDir(tempDir, "artifacts");
+    }
 
     private CloseableHttpClient httpclient = HttpClients.custom().setRedirectStrategy(new DefaultRedirectStrategy()).build();
 
@@ -29,38 +39,39 @@ public class HttpArtifactResolver implements IArtifactResolver {
         return "http";
     }
 
-    @Override
-    public boolean canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        if (StringUtils.isNotBlank(repositoryType) && !repositoryType.equals(getResolverType())) {
-            return false;
-        }
-        if (credentials != null && credentials.indexOf(':') < 0) {
-            // Must have credentials as user:password
-            return false;
-        }
-        boolean referenceIsURL = HttpUtil.isHttpURL(artifactReference);
-        // If repository is defined then it must be a http url
-        if (StringUtils.isNotBlank(repositoryURL)) {
-            // If reference is a http url then it must have base path the repository's url
-            return HttpUtil.isHttpURL(repositoryURL) && (!referenceIsURL || artifactReference.startsWith(repositoryURL));
-        } else {
-            // Repository is blank then artifact reference must be a http url
-            return HttpUtil.isHttpURL(artifactReference);
-        }
+    private boolean isHttpURL(String reference) {
+        return reference != null && (reference.startsWith("http://") || reference.startsWith("https://"));
     }
 
     @Override
-    public InputStream resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        if (!canHandleArtifact(artifactReference, repositoryURL, repositoryType, credentials)) {
-            return null;
+    public boolean canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+        if (!ResolverUtil.isResolverTypeCompatible(this, repositoryType)) {
+            return false;
         }
+        if (!ResolverUtil.isCredentialsBasicUserPassword(credentials)) {
+            // Must have credentials as user:password
+            return false;
+        }
+        // If repository is defined then it must be a http url
+        if (StringUtils.isNotBlank(repositoryURL)) {
+            // If reference is a http url then it must have base path the repository's url
+            return isHttpURL(repositoryURL) && (!isHttpURL(artifactReference) || artifactReference.startsWith(repositoryURL));
+        } else {
+            // Repository is blank then artifact reference must be a http url
+            return isHttpURL(artifactReference);
+        }
+    }
 
+    Path doResolveArtifact(String artifactReference, String repositoryURL, String credentials) {
         String getURL = null;
         try {
-            if (HttpUtil.isHttpURL(artifactReference)) {
+            if (isHttpURL(artifactReference)) {
                 getURL = artifactReference;
             } else {
-                getURL = repositoryURL + "/" + artifactReference;
+                getURL = repositoryURL;
+                if (StringUtils.isNotBlank(artifactReference)) {
+                    getURL += "/" + artifactReference;
+                }
             }
             HttpClientContext context = null;
             if (StringUtils.isNotBlank(credentials)) {
@@ -81,7 +92,9 @@ public class HttpArtifactResolver implements IArtifactResolver {
                 response.close();
                 return null;
             } else {
-                return response.getEntity().getContent();
+                try (InputStream artifactStream = response.getEntity().getContent()) {
+                    return ResolverUtil.copyArtifactStreamToTempFile(artifactReference, artifactStream, tempDir);
+                }
             }
         } catch (ClientProtocolException e) {
             log.info("Error downloading artifact at " + getURL, e);
@@ -89,6 +102,15 @@ public class HttpArtifactResolver implements IArtifactResolver {
         } catch (IOException e) {
             log.warn("Error downloading artifact at " + getURL, e);
             return null;
+        }
+    }
+
+    @Override
+    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+        if (!canHandleArtifact(artifactReference, repositoryURL, repositoryType, credentials)) {
+            return null;
+        } else {
+            return doResolveArtifact(artifactReference, repositoryURL, credentials);
         }
     }
 }

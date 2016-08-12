@@ -12,6 +12,9 @@ public class ConfigurableGitArtifactResolverFactory implements IConfigurableArti
     @Resource
     private ApplicationContext factoryContext;
 
+    @Resource
+    private GitArtifactResolver gitArtifactResolver;
+
     @Override
     public IConfigurableArtifactResolver<GitArtifactResolverConfiguration> newInstance() {
         return factoryContext.getBean(ConfigurableGitArtifactResolver.class);
@@ -20,5 +23,10 @@ public class ConfigurableGitArtifactResolverFactory implements IConfigurableArti
     @Override
     public Class<GitArtifactResolverConfiguration> getResolverConfigurationType() {
         return GitArtifactResolverConfiguration.class;
+    }
+
+    @Override
+    public String getResolverType() {
+        return gitArtifactResolver.getResolverType();
     }
 }

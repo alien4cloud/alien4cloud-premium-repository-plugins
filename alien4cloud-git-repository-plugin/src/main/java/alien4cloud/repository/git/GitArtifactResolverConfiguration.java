@@ -9,7 +9,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@FormProperties({ "url", "user", "password", "email" })
+@FormProperties({ "url", "user", "password" })
 public class GitArtifactResolverConfiguration {
 
     @NotNull
@@ -18,9 +18,7 @@ public class GitArtifactResolverConfiguration {
     @NotNull
     private String user;
 
+    @NotNull
     @FormPassword
     private String password;
-
-    @NotNull
-    private String email;
 }
