@@ -13,6 +13,7 @@ import org.apache.commons.lang.StringUtils;
 import alien4cloud.component.repository.IArtifactResolver;
 import alien4cloud.component.repository.IConfigurableArtifactResolver;
 import alien4cloud.deployment.exceptions.UnresolvableArtifactException;
+import alien4cloud.repository.configuration.SimpleConfiguration;
 import alien4cloud.repository.exception.ResolverNotConfiguredException;
 import alien4cloud.utils.FileUtil;
 
@@ -50,19 +51,15 @@ public class ResolverUtil {
         }
     }
 
-    public static Path copyArtifactToTempFile(String artifactRef, Path artifact, Path tempDir) {
-        try {
-            if (Files.isRegularFile(artifact)) {
-                Path output = createTemporaryArtifactFile(tempDir, artifactRef);
-                Files.copy(artifact, output, StandardCopyOption.REPLACE_EXISTING);
-                return output;
-            } else {
-                Path output = Files.createTempDirectory(tempDir, "");
-                FileUtil.copy(artifact, output);
-                return output;
-            }
-        } catch (IOException e) {
-            throw new UnresolvableArtifactException("Could not copy artifact " + artifactRef, e);
+    public static Path copyArtifactToTempFile(String artifactRef, Path artifact, Path tempDir) throws IOException {
+        if (Files.isRegularFile(artifact)) {
+            Path output = createTemporaryArtifactFile(tempDir, artifactRef);
+            Files.copy(artifact, output, StandardCopyOption.REPLACE_EXISTING);
+            return output;
+        } else {
+            Path output = Files.createTempDirectory(tempDir, "");
+            FileUtil.copy(artifact, output);
+            return output;
         }
     }
 
@@ -72,5 +69,14 @@ public class ResolverUtil {
             Files.createDirectories(uploadDir);
         }
         return uploadDir;
+    }
+
+    public static String getConfiguredCredentials(IConfigurableArtifactResolver<? extends SimpleConfiguration> resolver, String defaultValue) {
+        SimpleConfiguration preConfiguration = ResolverUtil.getMandatoryConfiguration(resolver);
+        if (preConfiguration.getUser() != null) {
+            return preConfiguration.getUser() + ":" + preConfiguration.getPassword();
+        } else {
+            return defaultValue;
+        }
     }
 }

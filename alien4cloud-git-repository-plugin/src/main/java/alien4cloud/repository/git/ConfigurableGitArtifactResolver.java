@@ -1,5 +1,7 @@
 package alien4cloud.repository.git;
 
+import static alien4cloud.repository.git.GitUtil.isGitURL;
+
 import java.nio.file.Path;
 
 import javax.annotation.Resource;
@@ -7,6 +9,9 @@ import javax.annotation.Resource;
 import org.apache.commons.lang.StringUtils;
 
 import alien4cloud.component.repository.IConfigurableArtifactResolver;
+import alien4cloud.component.repository.exception.InvalidResolverConfigurationException;
+import alien4cloud.repository.model.ValidationResult;
+import alien4cloud.repository.model.ValidationStatus;
 import alien4cloud.repository.util.ResolverUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,24 +29,35 @@ public class ConfigurableGitArtifactResolver implements IConfigurableArtifactRes
 
     @Override
     public void setConfiguration(GitArtifactResolverConfiguration configuration) {
+        if (!isGitURL(configuration.getUrl())) {
+            throw new InvalidResolverConfigurationException("URL is not a valid git " + configuration.getUrl());
+        }
         this.configuration = configuration;
     }
 
     @Override
-    public boolean canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        return (StringUtils.isBlank(repositoryURL) || repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl()))
-                && gitArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType, credentials);
+    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+        if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
+            return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
+        } else {
+            return gitArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType,
+                    ResolverUtil.getConfiguredCredentials(this, credentials));
+        }
+    }
+
+    private ValidationResult validateArtifact(String repositoryURL, String repositoryType, String credentials) {
+        if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
+            return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
+        } else {
+            return gitArtifactResolver.validateArtifact(repositoryURL, repositoryType, credentials);
+        }
     }
 
     @Override
     public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        if (!canHandleArtifact(artifactReference, repositoryURL, repositoryType, credentials)) {
+        if (validateArtifact(repositoryURL, repositoryType, credentials) != ValidationResult.SUCCESS) {
             return null;
         }
-        GitArtifactResolverConfiguration preConfiguration = ResolverUtil.getMandatoryConfiguration(this);
-        if (StringUtils.isBlank(credentials) && preConfiguration.getUser() != null) {
-            credentials = preConfiguration.getUser() + ":" + preConfiguration.getPassword();
-        }
-        return gitArtifactResolver.doResolveArtifact(artifactReference, repositoryURL, credentials);
+        return gitArtifactResolver.doResolveArtifact(artifactReference, repositoryURL, ResolverUtil.getConfiguredCredentials(this, credentials));
     }
 }

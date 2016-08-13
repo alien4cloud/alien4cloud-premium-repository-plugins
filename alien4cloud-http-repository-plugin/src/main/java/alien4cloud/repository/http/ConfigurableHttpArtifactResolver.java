@@ -1,5 +1,7 @@
 package alien4cloud.repository.http;
 
+import static alien4cloud.repository.http.HttpUtil.isHttpURL;
+
 import java.nio.file.Path;
 
 import javax.annotation.Resource;
@@ -7,6 +9,9 @@ import javax.annotation.Resource;
 import org.apache.commons.lang.StringUtils;
 
 import alien4cloud.component.repository.IConfigurableArtifactResolver;
+import alien4cloud.component.repository.exception.InvalidResolverConfigurationException;
+import alien4cloud.repository.model.ValidationResult;
+import alien4cloud.repository.model.ValidationStatus;
 import alien4cloud.repository.util.ResolverUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,25 +29,35 @@ public class ConfigurableHttpArtifactResolver implements IConfigurableArtifactRe
 
     @Override
     public void setConfiguration(HttpArtifactResolverConfiguration configuration) {
+        if (!isHttpURL(configuration.getUrl())) {
+            throw new InvalidResolverConfigurationException("Resolver's configuration is incorrect, URL must be defined and begins with 'http' or 'https'");
+        }
         this.configuration = configuration;
     }
 
     @Override
-    public boolean canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        // The artifact's repository url is configured and it must be equals to the configured URL of the resolver
-        return (StringUtils.isBlank(repositoryURL) || repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl()))
-                && httpArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType, credentials);
+    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+        if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
+            return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
+        } else {
+            return httpArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType,
+                    ResolverUtil.getConfiguredCredentials(this, credentials));
+        }
+    }
+
+    private ValidationResult validateArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+        if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
+            return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
+        } else {
+            return httpArtifactResolver.validateArtifact(artifactReference, repositoryURL, repositoryType, credentials);
+        }
     }
 
     @Override
     public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        if (!canHandleArtifact(artifactReference, repositoryURL, repositoryType, credentials)) {
+        if (validateArtifact(artifactReference, repositoryURL, repositoryType, credentials) != ValidationResult.SUCCESS) {
             return null;
         }
-        HttpArtifactResolverConfiguration preConfiguration = ResolverUtil.getMandatoryConfiguration(this);
-        if (StringUtils.isBlank(credentials) && preConfiguration.getUser() != null) {
-            credentials = preConfiguration.getUser() + ":" + preConfiguration.getPassword();
-        }
-        return httpArtifactResolver.doResolveArtifact(artifactReference, repositoryURL, credentials);
+        return httpArtifactResolver.doResolveArtifact(artifactReference, repositoryURL, ResolverUtil.getConfiguredCredentials(this, credentials));
     }
 }

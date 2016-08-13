@@ -1,5 +1,7 @@
 package alien4cloud.repository.git;
 
+import static alien4cloud.repository.git.GitUtil.isGitURL;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,6 +14,8 @@ import com.google.common.collect.Maps;
 
 import alien4cloud.component.repository.IArtifactResolver;
 import alien4cloud.git.RepositoryManager;
+import alien4cloud.repository.model.ValidationResult;
+import alien4cloud.repository.model.ValidationStatus;
 import alien4cloud.repository.util.ResolverUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,25 +37,45 @@ public class GitArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public boolean canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+        ValidationResult basicValidationResult = validateArtifact(repositoryURL, repositoryType, credentials);
+        if (basicValidationResult == ValidationResult.SUCCESS) {
+            // repository must be cloneable and file must exist
+            try {
+                Path artifactPath = cloneRepository(artifactReference, repositoryURL, credentials);
+                if (!Files.exists(artifactPath)) {
+                    return new ValidationResult(ValidationStatus.INVALID_ARTIFACT_REFERENCE,
+                            "Artifact with reference " + artifactReference + " does not exist in side the repository " + repositoryURL);
+                } else {
+                    return ValidationResult.SUCCESS;
+                }
+            } catch (Exception e) {
+                return new ValidationResult(ValidationStatus.ARTIFACT_NOT_RETRIEVABLE, "Artifact with reference " + artifactReference
+                        + " cannot be retrieved from the repository " + repositoryURL + " because of error" + e.getMessage());
+            }
+        } else {
+            return basicValidationResult;
+        }
+    }
+
+    ValidationResult validateArtifact(String repositoryURL, String repositoryType, String credentials) {
         if (!ResolverUtil.isResolverTypeCompatible(this, repositoryType)) {
             // Type must be git
-            return false;
+            return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_TYPE, "Repository is not of type " + getResolverType());
         }
         if (!ResolverUtil.isCredentialsBasicUserPassword(credentials)) {
             // Must have credentials as user:password
-            return false;
+            return new ValidationResult(ValidationStatus.INVALID_CREDENTIALS, "Credentials must be in format [user:password]");
         }
-        return StringUtils.isNotBlank(repositoryURL) && isGitURL(repositoryURL);
+        if (StringUtils.isBlank(repositoryURL) || !isGitURL(repositoryURL)) {
+            // URL must be a git
+            return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL,
+                    "Repository's URL " + repositoryURL + " is not git compliant, must finish by .git");
+        }
+        return ValidationResult.SUCCESS;
     }
 
-    private boolean isGitURL(String reference) {
-        // Git offers a wide variety of protocol https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols
-        // It events works in local so better not check the scheme of reference
-        return reference.endsWith(".git");
-    }
-
-    Path doResolveArtifact(String artifactReference, String repositoryURL, String credentials) {
+    private Path cloneRepository(String artifactReference, String repositoryURL, String credentials) throws IOException {
         String user = null;
         String password = null;
         if (StringUtils.isNotBlank(credentials)) {
@@ -79,24 +103,31 @@ public class GitArtifactResolver implements IArtifactResolver {
             nestedPath = nestedPath.substring(1);
         }
         CachedGitLocation cachedGitLocation = new CachedGitLocation(repositoryURL, user, password, branch);
+        Path repoPath = cache.get(new CachedGitLocation(repositoryURL, user, password, branch));
+        if (repoPath == null || !Files.exists(repoPath)) {
+            repoPath = Files.createTempDirectory(tempDir, "");
+            RepositoryManager.cloneOrCheckout(repoPath, repositoryURL, user, password, branch, "");
+            cache.put(cachedGitLocation, repoPath);
+        }
+        return repoPath.resolve(nestedPath);
+    }
+
+    Path doResolveArtifact(String artifactReference, String repositoryURL, String credentials) {
         try {
-            Path repoPath = cache.get(new CachedGitLocation(repositoryURL, user, password, branch));
-            if (repoPath == null || !Files.exists(repoPath)) {
-                repoPath = Files.createTempDirectory(tempDir, "");
-                RepositoryManager.cloneOrCheckout(repoPath, repositoryURL, user, password, branch, "");
-                cache.put(cachedGitLocation, repoPath);
-            }
-            Path artifactPathInsideRepo = repoPath.resolve(nestedPath);
+            Path artifactPathInsideRepo = cloneRepository(artifactReference, repositoryURL, credentials);
             return ResolverUtil.copyArtifactToTempFile(artifactReference, artifactPathInsideRepo, tempDir);
         } catch (Exception e) {
-            log.info("Unable to resolve git artifact [" + artifactReference + "] at repository [" + repositoryURL + "]", e);
+            log.info("Could not resolve git artifact " + artifactReference + " at " + repositoryURL + e.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("Could not resolve git artifact " + artifactReference + " at " + repositoryURL, e);
+            }
             return null;
         }
     }
 
     @Override
     public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        if (!canHandleArtifact(artifactReference, repositoryURL, repositoryType, credentials)) {
+        if (validateArtifact(repositoryURL, repositoryType, credentials) != ValidationResult.SUCCESS) {
             return null;
         }
         return doResolveArtifact(artifactReference, repositoryURL, credentials);
