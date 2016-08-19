@@ -1,27 +1,26 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>alien4cloud</groupId>
-        <artifactId>alien4cloud-repository-plugins</artifactId>
-        <version>1.3.0-SM3-SNAPSHOT</version>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>alien4cloud-git-repository-plugin</artifactId>
-    <name>Alien Git Repository Plugin</name>
-    <description>Alien plugin to manage artefact which comes from git repository.</description>
-    <dependencies>
-        <dependency>
-            <groupId>alien4cloud</groupId>
-            <artifactId>alien4cloud-repository-plugin-common</artifactId>
-            <version>${version}</version>
-        </dependency>
-    </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>alien4cloud</groupId>
+    <artifactId>alien4cloud-repository-plugins</artifactId>
+    <version>1.3.0-SM3</version>
+  </parent>
+  <artifactId>alien4cloud-git-repository-plugin</artifactId>
+  <name>Alien Git Repository Plugin</name>
+  <description>Alien plugin to manage artefact which comes from git repository.</description>
+  <dependencies>
+    <dependency>
+      <groupId>alien4cloud</groupId>
+      <artifactId>alien4cloud-repository-plugin-common</artifactId>
+      <version>${version}</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 </project>
