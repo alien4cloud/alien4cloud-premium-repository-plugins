@@ -187,7 +187,6 @@
                     <version>${maven.assembly.version}</version>
                     <configuration>
                         <appendAssemblyId>false</appendAssemblyId>
-                        <attach>false</attach>
                         <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
                         <descriptors>
                             <descriptor>src/main/assembly/assembly.xml</descriptor>
