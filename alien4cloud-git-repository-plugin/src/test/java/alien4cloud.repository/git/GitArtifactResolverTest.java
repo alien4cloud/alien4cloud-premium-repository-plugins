@@ -1,4 +1,4 @@
-package test.java.alien4cloud.repository.git;
+package alien4cloud.repository.git;
 
 import static org.junit.Assert.assertEquals;
 
