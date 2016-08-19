@@ -67,8 +67,10 @@ public class HttpArtifactResolver implements IArtifactResolver {
         // If repository is defined then it must be a http url
         if (StringUtils.isNotBlank(repositoryURL)) {
             // If reference is a http url then it must have base path the repository's url
-            boolean repositoryURLValid = isHttpURL(repositoryURL) && (!isHttpURL(artifactReference) || artifactReference.startsWith(repositoryURL));
-            if (!repositoryURLValid) {
+            if (!StringUtils.isNotBlank(artifactReference) || isHttpURL(artifactReference)) {
+                return new ValidationResult(ValidationStatus.INVALID_ARTIFACT_REFERENCE, "Wrong artifact reference, artifact cannot be null, empty or an URL");
+            }
+            if (!isHttpURL(repositoryURL)) {
                 return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Repository's URL is not HTTP compliant");
             }
         } else {
