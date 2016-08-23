@@ -16,6 +16,7 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.springframework.beans.factory.annotation.Value;
 
 import alien4cloud.component.repository.IArtifactResolver;
@@ -50,21 +51,21 @@ public class MavenArtifactResolver implements IArtifactResolver {
         ValidationResult basicValidationResult = validateArtifact(artifactReference, repositoryURL, repositoryType, credentials);
         if (basicValidationResult.equals(ValidationResult.SUCCESS)) {
             try {
-                Artifact artifact = resolveMavenArtifact(system, session, repositoryURL, credentials, convertToAetherArtifactFormat(artifactReference));
+                Artifact artifact = resolveMavenArtifact(system, session, repositoryURL, credentials, convertToArtifactRequest(artifactReference));
                 if (artifact.getFile().exists()) {
                     return ValidationResult.SUCCESS;
                 } else {
                     return new ValidationResult(ValidationStatus.ARTIFACT_NOT_RETRIEVABLE,
                             "Artifact cannot be retrieved as it does not exist at " + artifact.getFile());
                 }
-            } catch (ArtifactResolutionException e) {
+            } catch (ArtifactResolutionException | VersionRangeResolutionException e) {
                 return new ValidationResult(ValidationStatus.ARTIFACT_NOT_RETRIEVABLE, "Artifact cannot be retrieved " + e.getMessage());
             }
         }
         return basicValidationResult;
     }
 
-    private String convertToAetherArtifactFormat(String alienArtifactFormat) throws ArtifactResolutionException {
+    private MavenArtifactRequest convertToArtifactRequest(String alienArtifactFormat) throws ArtifactResolutionException {
         Matcher matcher = MAVEN_ARTIFACT_REGEXP.matcher(alienArtifactFormat);
         if (matcher.matches()) {
             String groupId = matcher.group(1);
@@ -72,8 +73,7 @@ public class MavenArtifactResolver implements IArtifactResolver {
             String version = matcher.group(3);
             String classifier = matcher.group(4);
             String packaging = matcher.group(5);
-            return groupId + ":" + artifactId + (StringUtils.isNotBlank(packaging) ? ":" + packaging : "")
-                    + (StringUtils.isNotBlank(classifier) ? ":" + classifier : "") + ":" + version;
+            return new MavenArtifactRequest(groupId, artifactId, packaging, version, classifier);
         } else {
             // Normally this would never happens as it was validated before
             throw new ArtifactResolutionException(Collections.emptyList(), "Artifact do not follow format [" + MAVEN_ARTIFACT_REGEXP.pattern() + "]");
@@ -83,13 +83,13 @@ public class MavenArtifactResolver implements IArtifactResolver {
     Path doResolveArtifact(String artifactReference, String repositoryURL, String credentials) {
         try {
 
-            Artifact artifact = resolveMavenArtifact(system, session, repositoryURL, credentials, convertToAetherArtifactFormat(artifactReference));
+            Artifact artifact = resolveMavenArtifact(system, session, repositoryURL, credentials, convertToArtifactRequest(artifactReference));
             if (artifact.getFile().exists()) {
                 return artifact.getFile().toPath();
             } else {
                 return null;
             }
-        } catch (ArtifactResolutionException e) {
+        } catch (ArtifactResolutionException | VersionRangeResolutionException e) {
             log.info("Error downloading artifact" + artifactReference + " at " + repositoryURL + " because of exception " + e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("Error downloading artifact" + artifactReference + " at " + repositoryURL, e);

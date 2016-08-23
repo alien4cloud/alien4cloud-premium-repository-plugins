@@ -31,6 +31,12 @@ public class MavenArtifactResolverTest {
         String repositoryType = "maven";
         ValidationResult validationResult = mavenArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType, null);
         assertEquals(ValidationStatus.SUCCESS, validationResult.getStatus());
+        artifactReference = "alien4cloud:alien4cloud-cloudify3-provider:[1.3.0-SM1,)@zip";
+        validationResult = mavenArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType, null);
+        assertEquals(ValidationStatus.SUCCESS, validationResult.getStatus());
+        artifactReference = "alien4cloud:alien4cloud-cloudify3-provider:[100.0.1,100.0.2]@zip";
+        validationResult = mavenArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType, null);
+        assertEquals(ValidationStatus.ARTIFACT_NOT_RETRIEVABLE, validationResult.getStatus());
     }
 
     @Test

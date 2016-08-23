@@ -9,7 +9,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.RepositoryEvent;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -21,12 +20,16 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.VersionRangeRequest;
+import org.eclipse.aether.resolution.VersionRangeResolutionException;
+import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transfer.AbstractTransferListener;
 import org.eclipse.aether.transfer.TransferEvent;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
+import org.eclipse.aether.transport.wagon.WagonTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
 
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +58,7 @@ public class MavenUtil {
         locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
         locator.addService(TransporterFactory.class, FileTransporterFactory.class);
         locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
+        locator.addService(TransporterFactory.class, WagonTransporterFactory.class);
         locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
             @Override
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
@@ -93,8 +97,13 @@ public class MavenUtil {
         return session;
     }
 
+    private static String convertToAetherCompatibleFormat(String groupId, String artifactId, String classifier, String packaging, String version) {
+        return groupId + ":" + artifactId + (StringUtils.isNotBlank(packaging) ? ":" + packaging : "")
+                + (StringUtils.isNotBlank(classifier) ? ":" + classifier : "") + ":" + version;
+    }
+
     public static Artifact resolveMavenArtifact(RepositorySystem system, RepositorySystemSession session, String url, String credentials,
-            String artifactReference) throws ArtifactResolutionException {
+            MavenArtifactRequest request) throws ArtifactResolutionException, VersionRangeResolutionException {
         RemoteRepository.Builder remoteRepositoryBuilder;
         if (StringUtils.isNotBlank(url)) {
             remoteRepositoryBuilder = new RemoteRepository.Builder(null, "default", url);
@@ -111,7 +120,18 @@ public class MavenUtil {
             remoteRepositoryBuilder.setAuthentication(authenticationBuilder.build());
         }
         RemoteRepository remoteRepository = remoteRepositoryBuilder.build();
-        Artifact artifact = new DefaultArtifact(artifactReference);
+        Artifact artifact = new DefaultArtifact(convertToAetherCompatibleFormat(request.getGroupId(), request.getArtifactId(), request.getClassifier(),
+                request.getPackaging(), request.getVersion()));
+        if (artifact.getBaseVersion().startsWith("[") || artifact.getBaseVersion().startsWith("(")) {
+            VersionRangeRequest versionRangeRequest = new VersionRangeRequest(artifact, Collections.singletonList(remoteRepository), null);
+            VersionRangeResult versionResult = system.resolveVersionRange(session, versionRangeRequest);
+            if (versionResult.getHighestVersion() == null) {
+                throw new VersionRangeResolutionException(versionResult, "No version found for range " + artifact.getBaseVersion());
+            }
+            String highestVersion = versionResult.getHighestVersion().toString();
+            artifact = new DefaultArtifact(convertToAetherCompatibleFormat(request.getGroupId(), request.getArtifactId(), request.getClassifier(),
+                    request.getPackaging(), highestVersion));
+        }
         ArtifactRequest artifactRequest = new ArtifactRequest();
         artifactRequest.setArtifact(artifact);
         artifactRequest.setRepositories(Collections.singletonList(remoteRepository));
