@@ -1,11 +1,15 @@
 id: alien-maven-repository-plugin
-name: Maven Repository Plugin
+name: Maven Artifact Resolver Plugin
 version: ${project.version}
 description: >
-  Plugin that contains the resolver for maven artifact
-configuration_class: alien4cloud.repostory.maven.PluginFactoryConfiguration
+  Plugin that contains resolver for maven artifact
+configuration_class: alien4cloud.repository.maven.PluginFactoryConfiguration
 component_descriptors:
-  - bean_name: maven-artifact-resolver
-    name: Maven Artifact Resolver
+  - bean_name: configurable-maven-artifact-resolver-factory
+    name: Maven Configurable Resolver Factory
     description: >
-      Resolve an artifact on a maven repository
+      Factory to create a configurable resolver for Maven repository
+  - bean_name: maven-artifact-resolver
+    name: Maven Resolver
+    description: >
+      Resolver for Maven repository's artifact

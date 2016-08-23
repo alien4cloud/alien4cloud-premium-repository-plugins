@@ -32,7 +32,7 @@ public class HttpArtifactResolver implements IArtifactResolver {
 
     @Value("${directories.alien}/${directories.upload_temp}")
     public void setTempDir(String tempDir) throws IOException {
-        this.tempDir = ResolverUtil.createPluginTemporaryDownloadDir(tempDir, "artifacts");
+        this.tempDir = ResolverUtil.createPluginTemporaryDownloadDir(tempDir, "artifacts/http");
     }
 
     private CloseableHttpClient httpclient = HttpClients.custom().setRedirectStrategy(new DefaultRedirectStrategy()).build();
@@ -45,7 +45,7 @@ public class HttpArtifactResolver implements IArtifactResolver {
     @Override
     public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
         ValidationResult basicValidationResult = validateArtifact(artifactReference, repositoryURL, repositoryType, credentials);
-        if (basicValidationResult == ValidationResult.SUCCESS) {
+        if (basicValidationResult.equals(ValidationResult.SUCCESS)) {
             try (InputStream ignored = downloadArtifact(artifactReference, repositoryURL, credentials)) {
                 return ValidationResult.SUCCESS;
             } catch (IOException e) {
@@ -129,7 +129,7 @@ public class HttpArtifactResolver implements IArtifactResolver {
 
     @Override
     public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        if (validateArtifact(artifactReference, repositoryURL, repositoryType, credentials) != ValidationResult.SUCCESS) {
+        if (!validateArtifact(artifactReference, repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         } else {
             return doResolveArtifact(artifactReference, repositoryURL, credentials);

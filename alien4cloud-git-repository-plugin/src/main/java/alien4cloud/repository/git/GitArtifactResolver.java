@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.api.Git;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.google.common.collect.Maps;
@@ -28,7 +29,7 @@ public class GitArtifactResolver implements IArtifactResolver {
 
     @Value("${directories.alien}/${directories.upload_temp}")
     public void setTempDir(String tempDir) throws IOException {
-        this.tempDir = ResolverUtil.createPluginTemporaryDownloadDir(tempDir, "artifacts");
+        this.tempDir = ResolverUtil.createPluginTemporaryDownloadDir(tempDir, "artifacts/git");
     }
 
     @Override
@@ -39,13 +40,13 @@ public class GitArtifactResolver implements IArtifactResolver {
     @Override
     public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
         ValidationResult basicValidationResult = validateArtifact(repositoryURL, repositoryType, credentials);
-        if (basicValidationResult == ValidationResult.SUCCESS) {
+        if (basicValidationResult.equals(ValidationResult.SUCCESS)) {
             // repository must be cloneable and file must exist
             try {
                 Path artifactPath = cloneRepository(artifactReference, repositoryURL, credentials);
                 if (!Files.exists(artifactPath)) {
                     return new ValidationResult(ValidationStatus.INVALID_ARTIFACT_REFERENCE,
-                            "Artifact with reference " + artifactReference + " does not exist in side the repository " + repositoryURL);
+                            "Artifact with reference " + artifactReference + " does not exist inside the repository " + repositoryURL);
                 } else {
                     return ValidationResult.SUCCESS;
                 }
@@ -103,11 +104,21 @@ public class GitArtifactResolver implements IArtifactResolver {
             nestedPath = nestedPath.substring(1);
         }
         CachedGitLocation cachedGitLocation = new CachedGitLocation(repositoryURL, user, password, branch);
-        Path repoPath = cache.get(new CachedGitLocation(repositoryURL, user, password, branch));
-        if (repoPath == null || !Files.exists(repoPath)) {
+        Path repoPath = cache.get(cachedGitLocation);
+        if (repoPath != null && !Files.exists(repoPath)) {
+            log.info("Cached Git repository {} at path {} has been removed", cachedGitLocation, repoPath);
+            cache.remove(cachedGitLocation);
+            repoPath = null;
+        }
+        boolean newGit = repoPath == null;
+        if (newGit) {
             repoPath = Files.createTempDirectory(tempDir, "");
-            RepositoryManager.cloneOrCheckout(repoPath, repositoryURL, user, password, branch, "");
+            log.info("Clone new Git repository {} and put in cache for further use {}", cachedGitLocation, repoPath);
             cache.put(cachedGitLocation, repoPath);
+        }
+        Git git = RepositoryManager.cloneOrCheckout(repoPath, repositoryURL, user, password, branch, "");
+        if (newGit) {
+            RepositoryManager.pull(git, user, password);
         }
         return repoPath.resolve(nestedPath);
     }
@@ -117,7 +128,7 @@ public class GitArtifactResolver implements IArtifactResolver {
             Path artifactPathInsideRepo = cloneRepository(artifactReference, repositoryURL, credentials);
             return ResolverUtil.copyArtifactToTempFile(artifactReference, artifactPathInsideRepo, tempDir);
         } catch (Exception e) {
-            log.info("Could not resolve git artifact " + artifactReference + " at " + repositoryURL + e.getMessage());
+            log.info("Could not resolve git artifact " + artifactReference + " at " + repositoryURL + " because of " + e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("Could not resolve git artifact " + artifactReference + " at " + repositoryURL, e);
             }
@@ -127,7 +138,7 @@ public class GitArtifactResolver implements IArtifactResolver {
 
     @Override
     public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        if (validateArtifact(repositoryURL, repositoryType, credentials) != ValidationResult.SUCCESS) {
+        if (!validateArtifact(repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         }
         return doResolveArtifact(artifactReference, repositoryURL, credentials);

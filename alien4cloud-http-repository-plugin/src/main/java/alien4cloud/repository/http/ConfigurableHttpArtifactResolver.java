@@ -55,7 +55,7 @@ public class ConfigurableHttpArtifactResolver implements IConfigurableArtifactRe
 
     @Override
     public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        if (validateArtifact(artifactReference, repositoryURL, repositoryType, credentials) != ValidationResult.SUCCESS) {
+        if (!validateArtifact(artifactReference, repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         }
         return httpArtifactResolver.doResolveArtifact(artifactReference, repositoryURL, ResolverUtil.getConfiguredCredentials(this, credentials));
