@@ -29,7 +29,7 @@ public class ConfigurableMavenArtifactResolver implements IConfigurableArtifactR
     @Override
     public void setConfiguration(MavenArtifactResolverConfiguration configuration) {
         if (!isValidMavenRepository(configuration.getUrl())) {
-            throw new InvalidResolverConfigurationException("Resolver's configuration is incorrect, URL must be defined and begins with 'http' or 'https'");
+            throw new InvalidResolverConfigurationException("Resolver's configuration is incorrect, URL must be defined and be valid absolute URI");
         }
         this.configuration = configuration;
     }
@@ -39,7 +39,7 @@ public class ConfigurableMavenArtifactResolver implements IConfigurableArtifactR
         if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
         } else {
-            return mavenArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType,
+            return mavenArtifactResolver.canHandleArtifact(artifactReference, ResolverUtil.getMandatoryConfiguration(this).getUrl(), repositoryType,
                     ResolverUtil.getConfiguredCredentials(this, credentials));
         }
     }
@@ -48,7 +48,8 @@ public class ConfigurableMavenArtifactResolver implements IConfigurableArtifactR
         if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
         } else {
-            return mavenArtifactResolver.validateArtifact(artifactReference, repositoryURL, repositoryType, credentials);
+            return mavenArtifactResolver.validateArtifact(artifactReference, ResolverUtil.getMandatoryConfiguration(this).getUrl(), repositoryType,
+                    credentials);
         }
     }
 
@@ -57,6 +58,7 @@ public class ConfigurableMavenArtifactResolver implements IConfigurableArtifactR
         if (!validateArtifact(artifactReference, repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         }
-        return mavenArtifactResolver.doResolveArtifact(artifactReference, repositoryURL, ResolverUtil.getConfiguredCredentials(this, credentials));
+        return mavenArtifactResolver.doResolveArtifact(artifactReference, ResolverUtil.getMandatoryConfiguration(this).getUrl(),
+                ResolverUtil.getConfiguredCredentials(this, credentials));
     }
 }

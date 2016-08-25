@@ -51,6 +51,10 @@ public class GitArtifactResolver implements IArtifactResolver {
                     return ValidationResult.SUCCESS;
                 }
             } catch (Exception e) {
+                log.info("Could not resolve git artifact " + artifactReference + " at " + repositoryURL + " because of " + e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("Could not resolve git artifact " + artifactReference + " at " + repositoryURL, e);
+                }
                 return new ValidationResult(ValidationStatus.ARTIFACT_NOT_RETRIEVABLE, "Artifact with reference " + artifactReference
                         + " cannot be retrieved from the repository " + repositoryURL + " because of error" + e.getMessage());
             }
@@ -110,16 +114,20 @@ public class GitArtifactResolver implements IArtifactResolver {
             cache.remove(cachedGitLocation);
             repoPath = null;
         }
-        boolean newGit = repoPath == null;
-        if (newGit) {
+        if (repoPath == null) {
             repoPath = Files.createTempDirectory(tempDir, "");
-            log.info("Clone new Git repository {} and put in cache for further use {}", cachedGitLocation, repoPath);
-            cache.put(cachedGitLocation, repoPath);
+            try (Git ignored = RepositoryManager.cloneOrCheckout(repoPath, repositoryURL, user, password, branch, "")) {
+                log.info("Cloned new Git repository {} and put in cache for further use {}", cachedGitLocation, repoPath);
+                cache.put(cachedGitLocation, repoPath);
+            }
+        } else {
+            try (Git git = Git.open(repoPath.toFile())) {
+                log.info("Found in cache Git repository {} and put in cache for further use {}", cachedGitLocation, repoPath);
+                // Try to pull to retrieve eventual modifications
+                RepositoryManager.pull(git, user, password);
+            }
         }
-        Git git = RepositoryManager.cloneOrCheckout(repoPath, repositoryURL, user, password, branch, "");
-        if (newGit) {
-            RepositoryManager.pull(git, user, password);
-        }
+
         return repoPath.resolve(nestedPath);
     }
 

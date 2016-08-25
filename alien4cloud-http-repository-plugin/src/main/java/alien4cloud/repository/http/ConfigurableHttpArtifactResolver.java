@@ -40,7 +40,7 @@ public class ConfigurableHttpArtifactResolver implements IConfigurableArtifactRe
         if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
         } else {
-            return httpArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType,
+            return httpArtifactResolver.canHandleArtifact(artifactReference, ResolverUtil.getMandatoryConfiguration(this).getUrl(), repositoryType,
                     ResolverUtil.getConfiguredCredentials(this, credentials));
         }
     }
@@ -49,7 +49,7 @@ public class ConfigurableHttpArtifactResolver implements IConfigurableArtifactRe
         if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
         } else {
-            return httpArtifactResolver.validateArtifact(artifactReference, repositoryURL, repositoryType, credentials);
+            return httpArtifactResolver.validateArtifact(artifactReference, ResolverUtil.getMandatoryConfiguration(this).getUrl(), repositoryType, credentials);
         }
     }
 
@@ -58,6 +58,7 @@ public class ConfigurableHttpArtifactResolver implements IConfigurableArtifactRe
         if (!validateArtifact(artifactReference, repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         }
-        return httpArtifactResolver.doResolveArtifact(artifactReference, repositoryURL, ResolverUtil.getConfiguredCredentials(this, credentials));
+        return httpArtifactResolver.doResolveArtifact(artifactReference, ResolverUtil.getMandatoryConfiguration(this).getUrl(),
+                ResolverUtil.getConfiguredCredentials(this, credentials));
     }
 }

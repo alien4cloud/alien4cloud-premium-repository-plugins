@@ -6,7 +6,7 @@ import lombok.ToString;
 
 @AllArgsConstructor
 @EqualsAndHashCode
-@ToString
+@ToString(exclude = "password")
 public class CachedGitLocation {
     String repositoryURL;
     String user;

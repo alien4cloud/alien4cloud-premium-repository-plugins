@@ -12,7 +12,7 @@ public class PluginFactoryConfiguration {
 
     @Bean(name = "configurable-maven-artifact-resolver")
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    public ConfigurableMavenArtifactResolver configurableHttpArtifactResolver() {
+    public ConfigurableMavenArtifactResolver configurableMavenArtifactResolver() {
         return new ConfigurableMavenArtifactResolver();
     }
 

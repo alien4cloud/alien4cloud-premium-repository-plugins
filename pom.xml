@@ -192,7 +192,7 @@
             <appendAssemblyId>false</appendAssemblyId>
             <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
             <descriptors>
-              <descriptor>src/main/assembly/assembly.xml</descriptor>
+              <descriptor>${project.parent.basedir}/src/main/assembly/assembly.xml</descriptor>
             </descriptors>
           </configuration>
           <executions>

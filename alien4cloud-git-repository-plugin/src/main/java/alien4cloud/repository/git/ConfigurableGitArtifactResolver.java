@@ -40,7 +40,7 @@ public class ConfigurableGitArtifactResolver implements IConfigurableArtifactRes
         if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
         } else {
-            return gitArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType,
+            return gitArtifactResolver.canHandleArtifact(artifactReference, ResolverUtil.getMandatoryConfiguration(this).getUrl(), repositoryType,
                     ResolverUtil.getConfiguredCredentials(this, credentials));
         }
     }
@@ -49,7 +49,7 @@ public class ConfigurableGitArtifactResolver implements IConfigurableArtifactRes
         if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
         } else {
-            return gitArtifactResolver.validateArtifact(repositoryURL, repositoryType, credentials);
+            return gitArtifactResolver.validateArtifact(ResolverUtil.getMandatoryConfiguration(this).getUrl(), repositoryType, credentials);
         }
     }
 
@@ -58,6 +58,7 @@ public class ConfigurableGitArtifactResolver implements IConfigurableArtifactRes
         if (!validateArtifact(repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         }
-        return gitArtifactResolver.doResolveArtifact(artifactReference, repositoryURL, ResolverUtil.getConfiguredCredentials(this, credentials));
+        return gitArtifactResolver.doResolveArtifact(artifactReference, ResolverUtil.getMandatoryConfiguration(this).getUrl(),
+                ResolverUtil.getConfiguredCredentials(this, credentials));
     }
 }
