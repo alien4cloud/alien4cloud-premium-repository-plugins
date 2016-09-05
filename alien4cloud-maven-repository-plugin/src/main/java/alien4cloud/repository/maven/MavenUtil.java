@@ -4,7 +4,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Map;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.AbstractRepositoryListener;
@@ -32,6 +34,7 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.transport.wagon.WagonTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
 
+import alien4cloud.tosca.normative.NormativeCredentialConstant;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -102,7 +105,7 @@ public class MavenUtil {
                 + (StringUtils.isNotBlank(classifier) ? ":" + classifier : "") + ":" + version;
     }
 
-    public static Artifact resolveMavenArtifact(RepositorySystem system, RepositorySystemSession session, String url, String credentials,
+    public static Artifact resolveMavenArtifact(RepositorySystem system, RepositorySystemSession session, String url, Map<String, Object> credentials,
             MavenArtifactRequest request) throws ArtifactResolutionException, VersionRangeResolutionException {
         RemoteRepository.Builder remoteRepositoryBuilder;
         if (StringUtils.isNotBlank(url)) {
@@ -110,11 +113,10 @@ public class MavenUtil {
         } else {
             remoteRepositoryBuilder = new RemoteRepository.Builder("central", "default", "http://central.maven.org/maven2/");
         }
-        if (StringUtils.isNotBlank(credentials)) {
-            int indexOfSeparator = credentials.indexOf(':');
+        if (MapUtils.isNotEmpty(credentials)) {
             AuthenticationBuilder authenticationBuilder = new AuthenticationBuilder();
-            String user = credentials.substring(0, indexOfSeparator);
-            String password = credentials.substring(indexOfSeparator + 1, credentials.length());
+            String user = credentials.get(NormativeCredentialConstant.USER_KEY).toString();
+            String password = credentials.get(NormativeCredentialConstant.TOKEN_KEY).toString();
             authenticationBuilder.addUsername(user);
             authenticationBuilder.addPassword(password);
             remoteRepositoryBuilder.setAuthentication(authenticationBuilder.build());

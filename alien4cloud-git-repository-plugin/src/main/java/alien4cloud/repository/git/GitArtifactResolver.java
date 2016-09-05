@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.api.Git;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +19,7 @@ import alien4cloud.git.RepositoryManager;
 import alien4cloud.repository.model.ValidationResult;
 import alien4cloud.repository.model.ValidationStatus;
 import alien4cloud.repository.util.ResolverUtil;
+import alien4cloud.tosca.normative.NormativeCredentialConstant;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -38,7 +40,7 @@ public class GitArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         ValidationResult basicValidationResult = validateArtifact(repositoryURL, repositoryType, credentials);
         if (basicValidationResult.equals(ValidationResult.SUCCESS)) {
             // repository must be cloneable and file must exist
@@ -63,7 +65,7 @@ public class GitArtifactResolver implements IArtifactResolver {
         }
     }
 
-    ValidationResult validateArtifact(String repositoryURL, String repositoryType, String credentials) {
+    ValidationResult validateArtifact(String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!ResolverUtil.isResolverTypeCompatible(this, repositoryType)) {
             // Type must be git
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_TYPE, "Repository is not of type " + getResolverType());
@@ -80,13 +82,12 @@ public class GitArtifactResolver implements IArtifactResolver {
         return ValidationResult.SUCCESS;
     }
 
-    private Path cloneRepository(String artifactReference, String repositoryURL, String credentials) throws IOException {
+    private Path cloneRepository(String artifactReference, String repositoryURL, Map<String, Object> credentials) throws IOException {
         String user = null;
         String password = null;
-        if (StringUtils.isNotBlank(credentials)) {
-            int indexOfSeparator = credentials.indexOf(':');
-            user = credentials.substring(0, indexOfSeparator);
-            password = credentials.substring(indexOfSeparator + 1, credentials.length());
+        if (MapUtils.isNotEmpty(credentials)) {
+            user = String.valueOf(credentials.get(NormativeCredentialConstant.USER_KEY));
+            password = String.valueOf(credentials.get(NormativeCredentialConstant.TOKEN_KEY));
         }
         if (artifactReference == null) {
             artifactReference = "";
@@ -131,7 +132,7 @@ public class GitArtifactResolver implements IArtifactResolver {
         return repoPath.resolve(nestedPath);
     }
 
-    Path doResolveArtifact(String artifactReference, String repositoryURL, String credentials) {
+    Path doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
         try {
             Path artifactPathInsideRepo = cloneRepository(artifactReference, repositoryURL, credentials);
             return ResolverUtil.copyArtifactToTempFile(artifactReference, artifactPathInsideRepo, tempDir);
@@ -145,7 +146,7 @@ public class GitArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!validateArtifact(repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         }

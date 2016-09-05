@@ -3,11 +3,14 @@ package alien4cloud.repository.http;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.util.Map;
 
+import org.elasticsearch.common.collect.ImmutableMap;
 import org.junit.Test;
 
 import alien4cloud.repository.model.ValidationResult;
 import alien4cloud.repository.model.ValidationStatus;
+import alien4cloud.tosca.normative.NormativeCredentialConstant;
 
 public class HttpArtifactResolverTest {
 
@@ -58,7 +61,7 @@ public class HttpArtifactResolverTest {
         String artifactReference = "alien4cloud/alien4cloud-cloudify3-provider/1.3.0-SM2/alien4cloud-cloudify3-provider-1.3.0-SM2.zip";
         String repositoryURL = "https://fastconnect.org/maven/service/local/repositories/opensource/content";
         String repositoryType = "http";
-        String credentials = "toto";
+        Map<String, Object> credentials = ImmutableMap.<String, Object> builder().put(NormativeCredentialConstant.USER_KEY, "toto").build();
         ValidationResult validationResult = httpArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType, credentials);
         assertEquals(ValidationStatus.INVALID_CREDENTIALS, validationResult.getStatus());
     }
@@ -87,5 +90,3 @@ public class HttpArtifactResolverTest {
     }
 
 }
-
-

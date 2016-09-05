@@ -3,6 +3,7 @@ package alien4cloud.repository.http;
 import static alien4cloud.repository.http.HttpUtil.isHttpURL;
 
 import java.nio.file.Path;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
@@ -36,7 +37,7 @@ public class ConfigurableHttpArtifactResolver implements IConfigurableArtifactRe
     }
 
     @Override
-    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
         } else {
@@ -45,7 +46,7 @@ public class ConfigurableHttpArtifactResolver implements IConfigurableArtifactRe
         }
     }
 
-    private ValidationResult validateArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    private ValidationResult validateArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
         } else {
@@ -54,7 +55,7 @@ public class ConfigurableHttpArtifactResolver implements IConfigurableArtifactRe
     }
 
     @Override
-    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!validateArtifact(artifactReference, repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         }

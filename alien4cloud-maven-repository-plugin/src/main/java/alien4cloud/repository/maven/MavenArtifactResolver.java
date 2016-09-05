@@ -8,6 +8,7 @@ import static alien4cloud.repository.maven.MavenUtil.resolveMavenArtifact;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -47,7 +48,7 @@ public class MavenArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         ValidationResult basicValidationResult = validateArtifact(artifactReference, repositoryURL, repositoryType, credentials);
         if (basicValidationResult.equals(ValidationResult.SUCCESS)) {
             try {
@@ -80,7 +81,7 @@ public class MavenArtifactResolver implements IArtifactResolver {
         }
     }
 
-    Path doResolveArtifact(String artifactReference, String repositoryURL, String credentials) {
+    Path doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
         try {
 
             Artifact artifact = resolveMavenArtifact(system, session, repositoryURL, credentials, convertToArtifactRequest(artifactReference));
@@ -98,7 +99,7 @@ public class MavenArtifactResolver implements IArtifactResolver {
         }
     }
 
-    ValidationResult validateArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    ValidationResult validateArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!ResolverUtil.isResolverTypeCompatible(this, repositoryType)) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_TYPE, "Repository is not of type " + getResolverType());
         }
@@ -121,7 +122,7 @@ public class MavenArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!validateArtifact(artifactReference, repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         } else {

@@ -5,7 +5,9 @@ import static alien4cloud.repository.http.HttpUtil.isHttpURL;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Map;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -23,6 +25,7 @@ import alien4cloud.component.repository.IArtifactResolver;
 import alien4cloud.repository.model.ValidationResult;
 import alien4cloud.repository.model.ValidationStatus;
 import alien4cloud.repository.util.ResolverUtil;
+import alien4cloud.tosca.normative.NormativeCredentialConstant;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -43,7 +46,7 @@ public class HttpArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         ValidationResult basicValidationResult = validateArtifact(artifactReference, repositoryURL, repositoryType, credentials);
         if (basicValidationResult.equals(ValidationResult.SUCCESS)) {
             try (InputStream ignored = downloadArtifact(artifactReference, repositoryURL, credentials)) {
@@ -56,7 +59,7 @@ public class HttpArtifactResolver implements IArtifactResolver {
         }
     }
 
-    ValidationResult validateArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    ValidationResult validateArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!ResolverUtil.isResolverTypeCompatible(this, repositoryType)) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_TYPE, "Repository is not of type " + getResolverType());
         }
@@ -87,7 +90,7 @@ public class HttpArtifactResolver implements IArtifactResolver {
         return ValidationResult.SUCCESS;
     }
 
-    private InputStream downloadArtifact(String artifactReference, String repositoryURL, String credentials) throws IOException {
+    private InputStream downloadArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) throws IOException {
         String getURL;
         if (isHttpURL(artifactReference)) {
             getURL = artifactReference;
@@ -98,12 +101,11 @@ public class HttpArtifactResolver implements IArtifactResolver {
             }
         }
         HttpClientContext context = null;
-        if (StringUtils.isNotBlank(credentials)) {
-            int indexOfSeparator = credentials.indexOf(':');
+        if (MapUtils.isNotEmpty(credentials)) {
             // Prepare basic login
             CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(credentials.substring(0, indexOfSeparator),
-                    credentials.substring(indexOfSeparator + 1, credentials.length())));
+            credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(credentials.get(NormativeCredentialConstant.USER_KEY).toString(),
+                    credentials.get(NormativeCredentialConstant.TOKEN_KEY).toString()));
             // Add AuthCache to the execution context
             context = HttpClientContext.create();
             context.setCredentialsProvider(credentialsProvider);
@@ -120,7 +122,7 @@ public class HttpArtifactResolver implements IArtifactResolver {
 
     }
 
-    Path doResolveArtifact(String artifactReference, String repositoryURL, String credentials) {
+    Path doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
         try (InputStream artifactStream = downloadArtifact(artifactReference, repositoryURL, credentials)) {
             return ResolverUtil.copyArtifactStreamToTempFile(artifactReference, artifactStream, tempDir);
         } catch (IOException e) {
@@ -133,7 +135,7 @@ public class HttpArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!validateArtifact(artifactReference, repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         } else {

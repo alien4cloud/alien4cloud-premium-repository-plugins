@@ -6,15 +6,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Map;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
+import org.elasticsearch.common.collect.ImmutableMap;
 
 import alien4cloud.component.repository.IArtifactResolver;
 import alien4cloud.component.repository.IConfigurableArtifactResolver;
 import alien4cloud.deployment.exceptions.UnresolvableArtifactException;
 import alien4cloud.repository.configuration.SimpleConfiguration;
 import alien4cloud.repository.exception.ResolverNotConfiguredException;
+import alien4cloud.tosca.normative.NormativeCredentialConstant;
 import alien4cloud.utils.FileUtil;
 
 public class ResolverUtil {
@@ -24,9 +28,9 @@ public class ResolverUtil {
         return StringUtils.isBlank(inputType) || inputType.equals(resolver.getResolverType());
     }
 
-    public static boolean isCredentialsBasicUserPassword(String credentials) {
+    public static boolean isCredentialsBasicUserPassword(Map<String, Object> credentials) {
         // It must be something like user:password with user not null
-        return StringUtils.isBlank(credentials) || credentials.indexOf(':') > 0;
+        return MapUtils.isEmpty(credentials) || (credentials.containsKey("user") && credentials.containsKey("token"));
     }
 
     public static <T> T getMandatoryConfiguration(IConfigurableArtifactResolver<T> resolver) {
@@ -71,10 +75,12 @@ public class ResolverUtil {
         return uploadDir;
     }
 
-    public static String getConfiguredCredentials(IConfigurableArtifactResolver<? extends SimpleConfiguration> resolver, String defaultValue) {
+    public static Map<String, Object> getConfiguredCredentials(IConfigurableArtifactResolver<? extends SimpleConfiguration> resolver,
+            Map<String, Object> defaultValue) {
         SimpleConfiguration preConfiguration = ResolverUtil.getMandatoryConfiguration(resolver);
         if (preConfiguration.getUser() != null) {
-            return preConfiguration.getUser() + ":" + preConfiguration.getPassword();
+            return ImmutableMap.<String, Object> builder().put(NormativeCredentialConstant.USER_KEY, preConfiguration.getUser())
+                    .put(NormativeCredentialConstant.TOKEN_KEY, preConfiguration.getPassword()).build();
         } else {
             return defaultValue;
         }
