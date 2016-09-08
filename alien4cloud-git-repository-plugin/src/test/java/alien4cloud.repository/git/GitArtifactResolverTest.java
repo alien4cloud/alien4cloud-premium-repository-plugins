@@ -3,13 +3,15 @@ package alien4cloud.repository.git;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.util.Map;
 
+import org.elasticsearch.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.Test;
 
-import alien4cloud.repository.git.GitArtifactResolver;
 import alien4cloud.repository.model.ValidationResult;
 import alien4cloud.repository.model.ValidationStatus;
+import alien4cloud.tosca.normative.NormativeCredentialConstant;
 
 public class GitArtifactResolverTest {
 
@@ -69,7 +71,7 @@ public class GitArtifactResolverTest {
         String artifactReference = "demo-repository/artifacts/settings.properties";
         String repositoryURL = "https://github.com/alien4cloud/samples.git";
         String repositoryType = "git";
-        String credentials = "toto";
+        Map<String, Object> credentials = ImmutableMap.<String, Object> builder().put(NormativeCredentialConstant.USER_KEY, "toto").build();
         ValidationResult validationResult = gitArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType, credentials);
         assertEquals(ValidationStatus.INVALID_CREDENTIALS, validationResult.getStatus());
     }
@@ -82,5 +84,3 @@ public class GitArtifactResolverTest {
     }
 
 }
-
-

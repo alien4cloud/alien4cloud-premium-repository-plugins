@@ -7,7 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.api.Git;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.google.common.collect.Maps;
@@ -17,6 +19,7 @@ import alien4cloud.git.RepositoryManager;
 import alien4cloud.repository.model.ValidationResult;
 import alien4cloud.repository.model.ValidationStatus;
 import alien4cloud.repository.util.ResolverUtil;
+import alien4cloud.tosca.normative.NormativeCredentialConstant;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -28,7 +31,7 @@ public class GitArtifactResolver implements IArtifactResolver {
 
     @Value("${directories.alien}/${directories.upload_temp}")
     public void setTempDir(String tempDir) throws IOException {
-        this.tempDir = ResolverUtil.createPluginTemporaryDownloadDir(tempDir, "artifacts");
+        this.tempDir = ResolverUtil.createPluginTemporaryDownloadDir(tempDir, "artifacts/git");
     }
 
     @Override
@@ -37,19 +40,23 @@ public class GitArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
+    public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         ValidationResult basicValidationResult = validateArtifact(repositoryURL, repositoryType, credentials);
-        if (basicValidationResult == ValidationResult.SUCCESS) {
+        if (basicValidationResult.equals(ValidationResult.SUCCESS)) {
             // repository must be cloneable and file must exist
             try {
                 Path artifactPath = cloneRepository(artifactReference, repositoryURL, credentials);
                 if (!Files.exists(artifactPath)) {
                     return new ValidationResult(ValidationStatus.INVALID_ARTIFACT_REFERENCE,
-                            "Artifact with reference " + artifactReference + " does not exist in side the repository " + repositoryURL);
+                            "Artifact with reference " + artifactReference + " does not exist inside the repository " + repositoryURL);
                 } else {
                     return ValidationResult.SUCCESS;
                 }
             } catch (Exception e) {
+                log.info("Could not resolve git artifact " + artifactReference + " at " + repositoryURL + " because of " + e.getMessage());
+                if (log.isDebugEnabled()) {
+                    log.debug("Could not resolve git artifact " + artifactReference + " at " + repositoryURL, e);
+                }
                 return new ValidationResult(ValidationStatus.ARTIFACT_NOT_RETRIEVABLE, "Artifact with reference " + artifactReference
                         + " cannot be retrieved from the repository " + repositoryURL + " because of error" + e.getMessage());
             }
@@ -58,7 +65,7 @@ public class GitArtifactResolver implements IArtifactResolver {
         }
     }
 
-    ValidationResult validateArtifact(String repositoryURL, String repositoryType, String credentials) {
+    ValidationResult validateArtifact(String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!ResolverUtil.isResolverTypeCompatible(this, repositoryType)) {
             // Type must be git
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_TYPE, "Repository is not of type " + getResolverType());
@@ -75,13 +82,12 @@ public class GitArtifactResolver implements IArtifactResolver {
         return ValidationResult.SUCCESS;
     }
 
-    private Path cloneRepository(String artifactReference, String repositoryURL, String credentials) throws IOException {
+    private Path cloneRepository(String artifactReference, String repositoryURL, Map<String, Object> credentials) throws IOException {
         String user = null;
         String password = null;
-        if (StringUtils.isNotBlank(credentials)) {
-            int indexOfSeparator = credentials.indexOf(':');
-            user = credentials.substring(0, indexOfSeparator);
-            password = credentials.substring(indexOfSeparator + 1, credentials.length());
+        if (MapUtils.isNotEmpty(credentials)) {
+            user = String.valueOf(credentials.get(NormativeCredentialConstant.USER_KEY));
+            password = String.valueOf(credentials.get(NormativeCredentialConstant.TOKEN_KEY));
         }
         if (artifactReference == null) {
             artifactReference = "";
@@ -103,21 +109,35 @@ public class GitArtifactResolver implements IArtifactResolver {
             nestedPath = nestedPath.substring(1);
         }
         CachedGitLocation cachedGitLocation = new CachedGitLocation(repositoryURL, user, password, branch);
-        Path repoPath = cache.get(new CachedGitLocation(repositoryURL, user, password, branch));
-        if (repoPath == null || !Files.exists(repoPath)) {
-            repoPath = Files.createTempDirectory(tempDir, "");
-            RepositoryManager.cloneOrCheckout(repoPath, repositoryURL, user, password, branch, "");
-            cache.put(cachedGitLocation, repoPath);
+        Path repoPath = cache.get(cachedGitLocation);
+        if (repoPath != null && !Files.exists(repoPath)) {
+            log.info("Cached Git repository {} at path {} has been removed", cachedGitLocation, repoPath);
+            cache.remove(cachedGitLocation);
+            repoPath = null;
         }
+        if (repoPath == null) {
+            repoPath = Files.createTempDirectory(tempDir, "");
+            try (Git ignored = RepositoryManager.cloneOrCheckout(repoPath, repositoryURL, user, password, branch, "")) {
+                log.info("Cloned new Git repository {} and put in cache for further use {}", cachedGitLocation, repoPath);
+                cache.put(cachedGitLocation, repoPath);
+            }
+        } else {
+            try (Git git = Git.open(repoPath.toFile())) {
+                log.info("Found in cache Git repository {} and put in cache for further use {}", cachedGitLocation, repoPath);
+                // Try to pull to retrieve eventual modifications
+                RepositoryManager.pull(git, user, password);
+            }
+        }
+
         return repoPath.resolve(nestedPath);
     }
 
-    Path doResolveArtifact(String artifactReference, String repositoryURL, String credentials) {
+    Path doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
         try {
             Path artifactPathInsideRepo = cloneRepository(artifactReference, repositoryURL, credentials);
             return ResolverUtil.copyArtifactToTempFile(artifactReference, artifactPathInsideRepo, tempDir);
         } catch (Exception e) {
-            log.info("Could not resolve git artifact " + artifactReference + " at " + repositoryURL + e.getMessage());
+            log.info("Could not resolve git artifact " + artifactReference + " at " + repositoryURL + " because of " + e.getMessage());
             if (log.isDebugEnabled()) {
                 log.debug("Could not resolve git artifact " + artifactReference + " at " + repositoryURL, e);
             }
@@ -126,8 +146,8 @@ public class GitArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, String credentials) {
-        if (validateArtifact(repositoryURL, repositoryType, credentials) != ValidationResult.SUCCESS) {
+    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
+        if (!validateArtifact(repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         }
         return doResolveArtifact(artifactReference, repositoryURL, credentials);
