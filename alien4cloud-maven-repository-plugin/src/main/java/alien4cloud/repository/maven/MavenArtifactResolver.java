@@ -81,12 +81,12 @@ public class MavenArtifactResolver implements IArtifactResolver {
         }
     }
 
-    Path doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
+    String doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
         try {
 
             Artifact artifact = resolveMavenArtifact(system, session, repositoryURL, credentials, convertToArtifactRequest(artifactReference));
             if (artifact.getFile().exists()) {
-                return artifact.getFile().toPath();
+                return artifact.getFile().toPath().toString();
             } else {
                 return null;
             }
@@ -122,7 +122,7 @@ public class MavenArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
+    public String resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!validateArtifact(artifactReference, repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         } else {

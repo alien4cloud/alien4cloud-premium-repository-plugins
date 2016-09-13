@@ -2,7 +2,6 @@ package alien4cloud.repository.git;
 
 import static alien4cloud.repository.git.GitUtil.isGitURL;
 
-import java.nio.file.Path;
 import java.util.Map;
 
 import javax.annotation.Resource;
@@ -55,7 +54,7 @@ public class ConfigurableGitArtifactResolver implements IConfigurableArtifactRes
     }
 
     @Override
-    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
+    public String resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!validateArtifact(repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         }

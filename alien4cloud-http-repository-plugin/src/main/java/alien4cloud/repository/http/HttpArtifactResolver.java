@@ -122,9 +122,9 @@ public class HttpArtifactResolver implements IArtifactResolver {
 
     }
 
-    Path doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
+    String doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
         try (InputStream artifactStream = downloadArtifact(artifactReference, repositoryURL, credentials)) {
-            return ResolverUtil.copyArtifactStreamToTempFile(artifactReference, artifactStream, tempDir);
+            return ResolverUtil.copyArtifactStreamToTempFile(artifactReference, artifactStream, tempDir).toString();
         } catch (IOException e) {
             log.info("Error downloading artifact" + artifactReference + " at " + repositoryURL + " because of exception " + e.getMessage());
             if (log.isDebugEnabled()) {
@@ -135,7 +135,7 @@ public class HttpArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
+    public String resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!validateArtifact(artifactReference, repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         } else {
