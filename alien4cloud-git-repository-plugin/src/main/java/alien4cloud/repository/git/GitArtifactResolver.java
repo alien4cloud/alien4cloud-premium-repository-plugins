@@ -132,10 +132,10 @@ public class GitArtifactResolver implements IArtifactResolver {
         return repoPath.resolve(nestedPath);
     }
 
-    Path doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
+    String doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
         try {
             Path artifactPathInsideRepo = cloneRepository(artifactReference, repositoryURL, credentials);
-            return ResolverUtil.copyArtifactToTempFile(artifactReference, artifactPathInsideRepo, tempDir);
+            return ResolverUtil.copyArtifactToTempFile(artifactReference, artifactPathInsideRepo, tempDir).toString();
         } catch (Exception e) {
             log.info("Could not resolve git artifact " + artifactReference + " at " + repositoryURL + " because of " + e.getMessage());
             if (log.isDebugEnabled()) {
@@ -146,7 +146,7 @@ public class GitArtifactResolver implements IArtifactResolver {
     }
 
     @Override
-    public Path resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
+    public String resolveArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (!validateArtifact(repositoryURL, repositoryType, credentials).equals(ValidationResult.SUCCESS)) {
             return null;
         }
