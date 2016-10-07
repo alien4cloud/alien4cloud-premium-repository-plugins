@@ -14,7 +14,6 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
@@ -33,13 +32,13 @@ public class MavenArtifactResolver implements IArtifactResolver {
 
     private RepositorySystem system;
 
-    private RepositorySystemSession session;
+    private Path repositoryDir;
 
     @Value("${directories.alien}/${directories.upload_temp}")
     public void setTempDir(String alienUploadTempDir) throws IOException {
         Path tempDir = ResolverUtil.createPluginTemporaryDownloadDir(alienUploadTempDir, "artifacts/maven");
         this.system = newRepositorySystem();
-        this.session = newSession(tempDir, this.system);
+        this.repositoryDir = tempDir;
     }
 
     @Override
@@ -52,7 +51,8 @@ public class MavenArtifactResolver implements IArtifactResolver {
         ValidationResult basicValidationResult = validateArtifact(artifactReference, repositoryURL, repositoryType, credentials);
         if (basicValidationResult.equals(ValidationResult.SUCCESS)) {
             try {
-                Artifact artifact = resolveMavenArtifact(system, session, repositoryURL, credentials, convertToArtifactRequest(artifactReference));
+                Artifact artifact = resolveMavenArtifact(system, newSession(repositoryDir, system), repositoryURL, credentials,
+                        convertToArtifactRequest(artifactReference));
                 if (artifact.getFile().exists()) {
                     return ValidationResult.SUCCESS;
                 } else {
@@ -84,7 +84,8 @@ public class MavenArtifactResolver implements IArtifactResolver {
     String doResolveArtifact(String artifactReference, String repositoryURL, Map<String, Object> credentials) {
         try {
 
-            Artifact artifact = resolveMavenArtifact(system, session, repositoryURL, credentials, convertToArtifactRequest(artifactReference));
+            Artifact artifact = resolveMavenArtifact(system, newSession(repositoryDir, system), repositoryURL, credentials,
+                    convertToArtifactRequest(artifactReference));
             if (artifact.getFile().exists()) {
                 return artifact.getFile().toPath().toString();
             } else {
