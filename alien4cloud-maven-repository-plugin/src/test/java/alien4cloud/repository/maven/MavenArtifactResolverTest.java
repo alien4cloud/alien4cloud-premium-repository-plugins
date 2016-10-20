@@ -3,15 +3,19 @@ package alien4cloud.repository.maven;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 
 import org.elasticsearch.common.collect.ImmutableMap;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import alien4cloud.repository.model.ValidationResult;
 import alien4cloud.repository.model.ValidationStatus;
 import alien4cloud.tosca.normative.NormativeCredentialConstant;
+import alien4cloud.utils.FileUtil;
 
 public class MavenArtifactResolverTest {
 
@@ -20,6 +24,7 @@ public class MavenArtifactResolverTest {
     @BeforeClass
     public static void before() throws IOException {
         mavenArtifactResolver.setTempDir("target/test");
+        FileUtil.delete(Paths.get("target/test"));
     }
 
     @Test
@@ -102,5 +107,16 @@ public class MavenArtifactResolverTest {
         String repositoryType = "maven";
         ValidationResult validationResult = mavenArtifactResolver.canHandleArtifact(null, null, repositoryType, null);
         assertEquals(ValidationStatus.INVALID_ARTIFACT_REFERENCE, validationResult.getStatus());
+    }
+
+    @Test
+    public void snaphostArtifactShouldBeUpdatedWhenChanged() throws IOException, InterruptedException {
+        String artifactReference = "alien4cloud:alien4cloud-cloudify3-provider:1.3.0-RC2-SNAPSHOT@zip";
+        String repositoryURL = "https://fastconnect.org/maven/content/repositories/opensource-snapshot";
+        String repositoryType = "maven";
+        long before = System.currentTimeMillis();
+        String artifactPath = mavenArtifactResolver.resolveArtifact(artifactReference, repositoryURL, repositoryType, null);
+        Assert.assertNotNull(artifactPath);
+        Assert.assertTrue(Files.getLastModifiedTime(Paths.get(artifactPath)).toMillis() > before);
     }
 }

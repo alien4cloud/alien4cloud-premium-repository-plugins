@@ -19,6 +19,7 @@ import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
@@ -121,7 +122,8 @@ public class MavenUtil {
             authenticationBuilder.addPassword(password);
             remoteRepositoryBuilder.setAuthentication(authenticationBuilder.build());
         }
-        RemoteRepository remoteRepository = remoteRepositoryBuilder.build();
+        RemoteRepository remoteRepository = remoteRepositoryBuilder
+                .setSnapshotPolicy(new RepositoryPolicy(true, RepositoryPolicy.UPDATE_POLICY_ALWAYS, RepositoryPolicy.CHECKSUM_POLICY_WARN)).build();
         Artifact artifact = new DefaultArtifact(convertToAetherCompatibleFormat(request.getGroupId(), request.getArtifactId(), request.getClassifier(),
                 request.getPackaging(), request.getVersion()));
         if (artifact.getBaseVersion().startsWith("[") || artifact.getBaseVersion().startsWith("(")) {
