@@ -36,6 +36,11 @@ public class ConfigurableGitArtifactResolver implements IConfigurableArtifactRes
     }
 
     @Override
+    public String getConfigurationUrl() {
+        return configuration.getUrl();
+    }
+
+    @Override
     public ValidationResult canHandleArtifact(String artifactReference, String repositoryURL, String repositoryType, Map<String, Object> credentials) {
         if (StringUtils.isNotBlank(repositoryURL) && !repositoryURL.equals(ResolverUtil.getMandatoryConfiguration(this).getUrl())) {
             return new ValidationResult(ValidationStatus.INVALID_REPOSITORY_URL, "Artifact's repository's URL does not match configuration");
