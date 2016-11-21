@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.elasticsearch.common.collect.ImmutableMap;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,6 +35,15 @@ public class GitArtifactResolverTest {
     @Test
     public void canHandleArtifactWithSuccess() throws IOException {
         String artifactReference = "demo-repository/artifacts/settings.properties";
+        String repositoryURL = "https://github.com/alien4cloud/samples.git";
+        String repositoryType = "git";
+        ValidationResult validationResult = gitArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType, null);
+        assertEquals(ValidationStatus.SUCCESS, validationResult.getStatus());
+    }
+
+    @Test
+    public void canHandleArtifactOnBranchWithSuccess() throws IOException {
+        String artifactReference = "1.3.0-SM4:demo-repository/artifacts/settings.properties";
         String repositoryURL = "https://github.com/alien4cloud/samples.git";
         String repositoryType = "git";
         ValidationResult validationResult = gitArtifactResolver.canHandleArtifact(artifactReference, repositoryURL, repositoryType, null);
@@ -83,4 +93,21 @@ public class GitArtifactResolverTest {
         assertEquals(ValidationStatus.INVALID_REPOSITORY_URL, validationResult.getStatus());
     }
 
+    @Test
+    public void resolveArtifactWithSuccess() throws IOException {
+        String artifactReference = "demo-repository/artifacts/settings.properties";
+        String repositoryURL = "https://github.com/alien4cloud/samples.git";
+        String repositoryType = "git";
+        String artifactPath = gitArtifactResolver.resolveArtifact(artifactReference, repositoryURL, repositoryType, null);
+        Assert.assertNotNull(artifactPath);
+    }
+
+    @Test
+    public void resolveArtifactOnBranchWithSuccess() throws IOException {
+        String artifactReference = "1.3.0-SM4:demo-repository/artifacts/settings.properties";
+        String repositoryURL = "https://github.com/alien4cloud/samples.git";
+        String repositoryType = "git";
+        String artifactPath = gitArtifactResolver.resolveArtifact(artifactReference, repositoryURL, repositoryType, null);
+        Assert.assertNotNull(artifactPath);
+    }
 }
