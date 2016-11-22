@@ -125,7 +125,9 @@ public class GitArtifactResolver implements IArtifactResolver {
             try (Git git = Git.open(repoPath.toFile())) {
                 log.info("Found in cache Git repository {} and put in cache for further use {}", cachedGitLocation, repoPath);
                 // Try to pull to retrieve eventual modifications
-                RepositoryManager.pull(git, user, password);
+                if (!RepositoryManager.isATag(git, branch)) {
+                    RepositoryManager.pull(git, user, password);
+                }
             }
         }
 
