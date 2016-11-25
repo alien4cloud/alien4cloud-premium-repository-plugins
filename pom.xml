@@ -7,7 +7,7 @@
   </parent>
   <packaging>pom</packaging>
   <artifactId>alien4cloud-premium-repository-plugins</artifactId>
-  <version>1.3.0-SNAPSHOT</version>
+  <version>1.4.0-SM1-SNAPSHOT</version>
   <name>Premium repository plugins parent.</name>
   <modules>
     <module>alien4cloud-git-repository-plugin</module>
