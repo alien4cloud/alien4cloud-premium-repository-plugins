@@ -14,7 +14,7 @@ import org.junit.Test;
 
 import alien4cloud.repository.model.ValidationResult;
 import alien4cloud.repository.model.ValidationStatus;
-import alien4cloud.tosca.normative.NormativeCredentialConstant;
+import org.alien4cloud.tosca.normative.constants.NormativeCredentialConstant;
 import alien4cloud.utils.FileUtil;
 
 public class MavenArtifactResolverTest {

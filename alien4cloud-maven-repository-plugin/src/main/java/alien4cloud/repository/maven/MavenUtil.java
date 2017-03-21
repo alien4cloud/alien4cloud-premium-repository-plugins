@@ -35,7 +35,7 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.transport.wagon.WagonTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
 
-import alien4cloud.tosca.normative.NormativeCredentialConstant;
+import org.alien4cloud.tosca.normative.constants.NormativeCredentialConstant;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
