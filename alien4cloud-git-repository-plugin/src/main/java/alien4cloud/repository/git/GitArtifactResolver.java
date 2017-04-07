@@ -19,7 +19,7 @@ import alien4cloud.git.RepositoryManager;
 import alien4cloud.repository.model.ValidationResult;
 import alien4cloud.repository.model.ValidationStatus;
 import alien4cloud.repository.util.ResolverUtil;
-import alien4cloud.tosca.normative.NormativeCredentialConstant;
+import org.alien4cloud.tosca.normative.constants.NormativeCredentialConstant;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
