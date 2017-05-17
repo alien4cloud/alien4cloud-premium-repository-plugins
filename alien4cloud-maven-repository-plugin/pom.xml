@@ -9,7 +9,7 @@
     <name>Alien Maven Repository Plugin</name>
     <description>Alien plugin to manage artefact which comes from maven repository.</description>
     <properties>
-        <aetherVersion>1.0.0.v20140518</aetherVersion>
+        <aetherVersion>1.1.0</aetherVersion>
         <mavenVersion>3.1.0</mavenVersion>
         <wagonVersion>1.0</wagonVersion>
     </properties>
@@ -43,6 +43,17 @@
             <groupId>org.eclipse.aether</groupId>
             <artifactId>aether-transport-http</artifactId>
             <version>${aetherVersion}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>org.apache.httpcomponents</artifactId>
+                    <groupId>httpclient</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.3.6</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.aether</groupId>
