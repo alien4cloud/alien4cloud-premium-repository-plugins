@@ -7,7 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import org.elasticsearch.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
