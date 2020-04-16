@@ -208,7 +208,7 @@
   </build>
 
   <scm>
-    <connection>scm:git:https://fastconnect.org/gitlab/alien4cloud/alien4cloud-repository-plugins.git</connection>
+    <connection>scm:git:https://github.com/alien4cloud/alien4cloud-repository-plugins.git</connection>
   </scm>
 
   <profiles>
